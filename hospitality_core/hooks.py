@@ -35,6 +35,7 @@ permission_query_conditions = {
     "Folio Transaction": "hospitality_core.hospitality_core.permissions.folio_transaction_query",
     "Housekeeping Task": "hospitality_core.hospitality_core.permissions.housekeeping_task_query",
     "Concierge Request": "hospitality_core.hospitality_core.permissions.concierge_request_query",
+    "Hospitality Loyalty Entry": "hospitality_core.hospitality_core.permissions.loyalty_entry_query",
 }
 
 # Document Events
@@ -48,7 +49,8 @@ doc_events = {
         "on_update_after_submit": [
             "hospitality_core.hospitality_core.utils.audit.hook_log_reservation",
             "hospitality_core.hospitality_core.api.housekeeping.hook_on_reservation_checkout",
-            "hospitality_core.hospitality_core.utils.notifications.hook_reservation_status"
+            "hospitality_core.hospitality_core.utils.notifications.hook_reservation_status",
+            "hospitality_core.hospitality_core.api.loyalty.hook_on_reservation_checkout"
         ]
     },
     "Guest Folio": {

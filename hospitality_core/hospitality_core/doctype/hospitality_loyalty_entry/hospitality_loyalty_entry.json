@@ -1,0 +1,137 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "autoname": "format:LE-{YYYY}-{MM}-{#####}",
+ "creation": "2026-05-07 13:25:00.000000",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "guest",
+  "entry_type",
+  "points",
+  "column_break_1",
+  "reservation",
+  "folio",
+  "amount_basis",
+  "section_break_1",
+  "notes"
+ ],
+ "fields": [
+  {
+   "fieldname": "guest",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Guest",
+   "options": "Guest",
+   "reqd": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "entry_type",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Entry Type",
+   "options": "Earn\nRedeem\nAdjustment\nExpiry",
+   "reqd": 1
+  },
+  {
+   "fieldname": "points",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "label": "Points (signed)",
+   "precision": "2",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "reservation",
+   "fieldtype": "Link",
+   "in_standard_filter": 1,
+   "label": "Reservation",
+   "options": "Hotel Reservation"
+  },
+  {
+   "fieldname": "folio",
+   "fieldtype": "Link",
+   "label": "Folio",
+   "options": "Guest Folio"
+  },
+  {
+   "default": "0",
+   "fieldname": "amount_basis",
+   "fieldtype": "Currency",
+   "label": "Amount Basis"
+  },
+  {
+   "fieldname": "section_break_1",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "notes",
+   "fieldtype": "Small Text",
+   "label": "Notes"
+  }
+ ],
+ "in_create": 0,
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-05-07 13:25:00.000000",
+ "modified_by": "Administrator",
+ "module": "Hospitality Core",
+ "name": "Hospitality Loyalty Entry",
+ "naming_rule": "Expression",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 0,
+   "email": 0,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 0
+  },
+  {
+   "create": 1,
+   "delete": 0,
+   "email": 0,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Hospitality Manager",
+   "share": 0,
+   "write": 0
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 0,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Hospitality User",
+   "share": 0,
+   "write": 0
+  }
+ ],
+ "quick_entry": 0,
+ "read_only": 1,
+ "search_fields": "guest,entry_type,reservation",
+ "show_name_in_global_search": 0,
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "guest",
+ "track_changes": 0
+}

@@ -73,6 +73,27 @@ def concierge_request_query(user: str | None = None) -> str:
 	return _scope_clause(user, "Concierge Request", "`tabConcierge Request`")
 
 
+def loyalty_entry_query(user: str | None = None) -> str:
+	"""Loyalty entries are scoped via the linked Hotel Reservation's reception."""
+	if not user:
+		user = frappe.session.user or "Guest"
+	if user == "Guest":
+		return "1=0"
+	if _bypass(user):
+		return ""
+	receptions = _user_receptions(user, "Hotel Reservation")
+	if not receptions:
+		return "`tabHospitality Loyalty Entry`.reservation IS NULL"
+	placeholders = ", ".join(frappe.db.escape(r) for r in receptions)
+	return (
+		f"(EXISTS (SELECT 1 FROM `tabHotel Reservation` `res_scope` "
+		f"WHERE `res_scope`.name = `tabHospitality Loyalty Entry`.reservation "
+		f"AND `res_scope`.hotel_reception IN ({placeholders})) "
+		f"OR `tabHospitality Loyalty Entry`.reservation IS NULL "
+		f"OR `tabHospitality Loyalty Entry`.reservation = '')"
+	)
+
+
 def folio_transaction_query(user: str | None = None) -> str:
 	"""Folio Transaction is a child of Guest Folio — scope via parent reception."""
 	if not user:
