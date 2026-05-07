@@ -1,0 +1,194 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "autoname": "format:CR-{YYYY}-{MM}-{#####}",
+ "creation": "2026-05-07 12:55:00.000000",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "guest",
+  "room",
+  "hotel_reception",
+  "category",
+  "priority",
+  "column_break_1",
+  "status",
+  "assigned_to",
+  "due_at",
+  "section_break_detail",
+  "subject",
+  "details",
+  "section_break_resolution",
+  "started_at",
+  "resolved_at",
+  "resolution_notes"
+ ],
+ "fields": [
+  {
+   "fieldname": "guest",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Guest",
+   "options": "Guest"
+  },
+  {
+   "fieldname": "room",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Room",
+   "options": "Hotel Room"
+  },
+  {
+   "fetch_from": "room.hotel_reception",
+   "fieldname": "hotel_reception",
+   "fieldtype": "Link",
+   "in_standard_filter": 1,
+   "label": "Hotel Reception",
+   "options": "Hotel Reception",
+   "read_only": 1,
+   "search_index": 1
+  },
+  {
+   "default": "Other",
+   "fieldname": "category",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Category",
+   "options": "Transport\nDining Reservation\nTour & Activity\nFlower & Gift\nLaundry\nPharmacy\nBabysitting\nWake-up Call\nIn-Room Dining\nTechnical\nOther",
+   "reqd": 1
+  },
+  {
+   "default": "Normal",
+   "fieldname": "priority",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Priority",
+   "options": "Low\nNormal\nHigh\nUrgent"
+  },
+  {
+   "fieldname": "column_break_1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "Open",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Status",
+   "options": "Open\nAcknowledged\nIn Progress\nResolved\nCancelled",
+   "reqd": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "assigned_to",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Assigned To",
+   "options": "User"
+  },
+  {
+   "fieldname": "due_at",
+   "fieldtype": "Datetime",
+   "label": "Due At"
+  },
+  {
+   "fieldname": "section_break_detail",
+   "fieldtype": "Section Break",
+   "label": "Detail"
+  },
+  {
+   "fieldname": "subject",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Subject",
+   "reqd": 1
+  },
+  {
+   "fieldname": "details",
+   "fieldtype": "Text",
+   "label": "Details"
+  },
+  {
+   "fieldname": "section_break_resolution",
+   "fieldtype": "Section Break",
+   "label": "Resolution"
+  },
+  {
+   "fieldname": "started_at",
+   "fieldtype": "Datetime",
+   "label": "Started At",
+   "read_only": 1
+  },
+  {
+   "fieldname": "resolved_at",
+   "fieldtype": "Datetime",
+   "label": "Resolved At",
+   "read_only": 1
+  },
+  {
+   "fieldname": "resolution_notes",
+   "fieldtype": "Text",
+   "label": "Resolution Notes"
+  }
+ ],
+ "in_create": 0,
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-05-07 12:55:00.000000",
+ "modified_by": "Administrator",
+ "module": "Hospitality Core",
+ "name": "Concierge Request",
+ "naming_rule": "Expression",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Hospitality Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 0,
+   "email": 0,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Hospitality User",
+   "share": 0,
+   "write": 1
+  }
+ ],
+ "quick_entry": 1,
+ "search_fields": "guest,room,subject,category",
+ "show_name_in_global_search": 0,
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "subject",
+ "track_changes": 1
+}

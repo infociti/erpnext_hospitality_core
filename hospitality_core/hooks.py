@@ -34,6 +34,7 @@ permission_query_conditions = {
     "Hospitality Expense": "hospitality_core.hospitality_core.permissions.hospitality_expense_query",
     "Folio Transaction": "hospitality_core.hospitality_core.permissions.folio_transaction_query",
     "Housekeeping Task": "hospitality_core.hospitality_core.permissions.housekeeping_task_query",
+    "Concierge Request": "hospitality_core.hospitality_core.permissions.concierge_request_query",
 }
 
 # Document Events
