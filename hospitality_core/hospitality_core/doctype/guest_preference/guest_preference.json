@@ -1,0 +1,222 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "autoname": "field:guest",
+ "creation": "2026-05-07 12:45:00.000000",
+ "doctype": "DocType",
+ "editable_grid": 0,
+ "engine": "InnoDB",
+ "field_order": [
+  "guest",
+  "loyalty_tier",
+  "section_room",
+  "preferred_floor",
+  "smoking_preference",
+  "bed_type",
+  "column_break_room",
+  "preferred_temperature",
+  "pillow_type",
+  "section_food",
+  "dietary_restrictions",
+  "allergies",
+  "favorite_drinks",
+  "section_comm",
+  "language",
+  "marketing_consent_email",
+  "marketing_consent_sms",
+  "column_break_comm",
+  "do_not_disturb_window",
+  "preferred_check_in_time",
+  "section_special",
+  "special_requests",
+  "internal_notes"
+ ],
+ "fields": [
+  {
+   "fieldname": "guest",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Guest",
+   "options": "Guest",
+   "reqd": 1,
+   "unique": 1
+  },
+  {
+   "default": "Standard",
+   "fieldname": "loyalty_tier",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Loyalty Tier",
+   "options": "Standard\nSilver\nGold\nPlatinum\nVVIP"
+  },
+  {
+   "fieldname": "section_room",
+   "fieldtype": "Section Break",
+   "label": "Room Preferences"
+  },
+  {
+   "fieldname": "preferred_floor",
+   "fieldtype": "Data",
+   "label": "Preferred Floor"
+  },
+  {
+   "default": "No Preference",
+   "fieldname": "smoking_preference",
+   "fieldtype": "Select",
+   "label": "Smoking",
+   "options": "No Preference\nNon-Smoking\nSmoking"
+  },
+  {
+   "default": "No Preference",
+   "fieldname": "bed_type",
+   "fieldtype": "Select",
+   "label": "Bed Type",
+   "options": "No Preference\nKing\nQueen\nTwin\nDouble"
+  },
+  {
+   "fieldname": "column_break_room",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "preferred_temperature",
+   "fieldtype": "Int",
+   "label": "Preferred Temperature (°C)"
+  },
+  {
+   "fieldname": "pillow_type",
+   "fieldtype": "Select",
+   "label": "Pillow Type",
+   "options": "\nSoft\nMedium\nFirm\nMemory Foam\nHypoallergenic"
+  },
+  {
+   "fieldname": "section_food",
+   "fieldtype": "Section Break",
+   "label": "Food & Beverage"
+  },
+  {
+   "fieldname": "dietary_restrictions",
+   "fieldtype": "Small Text",
+   "label": "Dietary Restrictions"
+  },
+  {
+   "fieldname": "allergies",
+   "fieldtype": "Small Text",
+   "label": "Allergies"
+  },
+  {
+   "fieldname": "favorite_drinks",
+   "fieldtype": "Small Text",
+   "label": "Favourite Drinks"
+  },
+  {
+   "fieldname": "section_comm",
+   "fieldtype": "Section Break",
+   "label": "Communication"
+  },
+  {
+   "default": "en",
+   "fieldname": "language",
+   "fieldtype": "Data",
+   "label": "Language",
+   "length": 16
+  },
+  {
+   "default": "0",
+   "fieldname": "marketing_consent_email",
+   "fieldtype": "Check",
+   "label": "Marketing Consent (Email)"
+  },
+  {
+   "default": "0",
+   "fieldname": "marketing_consent_sms",
+   "fieldtype": "Check",
+   "label": "Marketing Consent (SMS)"
+  },
+  {
+   "fieldname": "column_break_comm",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "do_not_disturb_window",
+   "fieldtype": "Data",
+   "label": "Do Not Disturb Window",
+   "description": "e.g., 22:00-08:00"
+  },
+  {
+   "fieldname": "preferred_check_in_time",
+   "fieldtype": "Time",
+   "label": "Preferred Check-in Time"
+  },
+  {
+   "fieldname": "section_special",
+   "fieldtype": "Section Break",
+   "label": "Special"
+  },
+  {
+   "fieldname": "special_requests",
+   "fieldtype": "Text",
+   "label": "Special Requests"
+  },
+  {
+   "fieldname": "internal_notes",
+   "fieldtype": "Text",
+   "label": "Internal Notes"
+  }
+ ],
+ "in_create": 0,
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-05-07 12:45:00.000000",
+ "modified_by": "Administrator",
+ "module": "Hospitality Core",
+ "name": "Guest Preference",
+ "naming_rule": "By fieldname",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 0,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Hospitality Manager",
+   "share": 0,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 0,
+   "email": 0,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Hospitality User",
+   "share": 0,
+   "write": 1
+  }
+ ],
+ "quick_entry": 1,
+ "show_name_in_global_search": 0,
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "guest",
+ "track_changes": 1
+}
