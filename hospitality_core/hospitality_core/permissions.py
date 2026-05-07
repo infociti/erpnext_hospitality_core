@@ -65,6 +65,10 @@ def hospitality_expense_query(user: str | None = None) -> str:
 	return _scope_clause(user, "Hospitality Expense", "`tabHospitality Expense`")
 
 
+def housekeeping_task_query(user: str | None = None) -> str:
+	return _scope_clause(user, "Housekeeping Task", "`tabHousekeeping Task`")
+
+
 def folio_transaction_query(user: str | None = None) -> str:
 	"""Folio Transaction is a child of Guest Folio — scope via parent reception."""
 	if not user:

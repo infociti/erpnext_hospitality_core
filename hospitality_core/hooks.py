@@ -33,6 +33,7 @@ permission_query_conditions = {
     "Guest Folio": "hospitality_core.hospitality_core.permissions.guest_folio_query",
     "Hospitality Expense": "hospitality_core.hospitality_core.permissions.hospitality_expense_query",
     "Folio Transaction": "hospitality_core.hospitality_core.permissions.folio_transaction_query",
+    "Housekeeping Task": "hospitality_core.hospitality_core.permissions.housekeeping_task_query",
 }
 
 # Document Events
@@ -40,7 +41,10 @@ doc_events = {
     "Hotel Reservation": {
         "on_submit": "hospitality_core.hospitality_core.utils.audit.hook_log_reservation",
         "on_cancel": "hospitality_core.hospitality_core.utils.audit.hook_log_reservation",
-        "on_update_after_submit": "hospitality_core.hospitality_core.utils.audit.hook_log_reservation"
+        "on_update_after_submit": [
+            "hospitality_core.hospitality_core.utils.audit.hook_log_reservation",
+            "hospitality_core.hospitality_core.api.housekeeping.hook_on_reservation_checkout"
+        ]
     },
     "Guest Folio": {
         "on_update": [
