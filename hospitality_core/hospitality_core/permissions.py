@@ -73,6 +73,10 @@ def concierge_request_query(user: str | None = None) -> str:
 	return _scope_clause(user, "Concierge Request", "`tabConcierge Request`")
 
 
+def minibar_consumption_query(user: str | None = None) -> str:
+	return _scope_clause(user, "Minibar Consumption", "`tabMinibar Consumption`")
+
+
 def loyalty_entry_query(user: str | None = None) -> str:
 	"""Loyalty entries are scoped via the linked Hotel Reservation's reception."""
 	if not user:
