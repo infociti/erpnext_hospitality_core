@@ -1,0 +1,38 @@
+[
+ {
+  "doctype": "Email Template",
+  "name": "Hospitality - Booking Confirmation",
+  "subject": "Booking confirmed — {{ doc.name }}",
+  "response": "<p>Dear {{ guest_name or 'Guest' }},</p>\n<p>Your booking is confirmed.</p>\n<table>\n<tr><td><strong>Reservation</strong></td><td>{{ doc.name }}</td></tr>\n<tr><td><strong>Arrival</strong></td><td>{{ doc.arrival_date }}</td></tr>\n<tr><td><strong>Departure</strong></td><td>{{ doc.departure_date }}</td></tr>\n<tr><td><strong>Room Type</strong></td><td>{{ doc.room_type }}</td></tr>\n<tr><td><strong>Room</strong></td><td>{{ doc.room or 'Will be assigned at check-in' }}</td></tr>\n</table>\n<p>We look forward to welcoming you.</p>\n<p>— Front Desk</p>",
+  "use_html": 1,
+  "owner": "Administrator",
+  "modified_by": "Administrator"
+ },
+ {
+  "doctype": "Email Template",
+  "name": "Hospitality - Check-in Welcome",
+  "subject": "Welcome — Room {{ doc.room }}",
+  "response": "<p>Dear {{ guest_name or 'Guest' }},</p>\n<p>Welcome! You are checked in to room <strong>{{ doc.room }}</strong>.</p>\n<p>Wifi, room service, and local information are available from your in-room TV or via the front desk at any time.</p>\n<p>Departure: {{ doc.departure_date }}</p>\n<p>Enjoy your stay,</p>\n<p>— Front Desk</p>",
+  "use_html": 1,
+  "owner": "Administrator",
+  "modified_by": "Administrator"
+ },
+ {
+  "doctype": "Email Template",
+  "name": "Hospitality - Check-out Thanks",
+  "subject": "Thank you for staying with us",
+  "response": "<p>Dear {{ guest_name or 'Guest' }},</p>\n<p>Thank you for staying with us. We hope you had a comfortable stay in room {{ doc.room }}.</p>\n<p>Your folio summary is attached for reference.</p>\n<p>We would love to see you again.</p>\n<p>— Front Desk</p>",
+  "use_html": 1,
+  "owner": "Administrator",
+  "modified_by": "Administrator"
+ },
+ {
+  "doctype": "Email Template",
+  "name": "Hospitality - Payment Receipt",
+  "subject": "Payment received — {{ doc.name }}",
+  "response": "<p>Dear {{ guest_name or 'Guest' }},</p>\n<p>We have received your payment of <strong>{{ frappe.utils.fmt_money(doc.paid_amount, currency=doc.paid_to_account_currency) }}</strong>.</p>\n<table>\n<tr><td><strong>Reference</strong></td><td>{{ doc.name }}</td></tr>\n<tr><td><strong>Date</strong></td><td>{{ doc.posting_date }}</td></tr>\n<tr><td><strong>Mode</strong></td><td>{{ doc.mode_of_payment }}</td></tr>\n</table>\n<p>Thank you,</p>\n<p>— Front Desk</p>",
+  "use_html": 1,
+  "owner": "Administrator",
+  "modified_by": "Administrator"
+ }
+]

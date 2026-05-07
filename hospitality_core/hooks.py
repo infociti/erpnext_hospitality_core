@@ -40,11 +40,15 @@ permission_query_conditions = {
 # Document Events
 doc_events = {
     "Hotel Reservation": {
-        "on_submit": "hospitality_core.hospitality_core.utils.audit.hook_log_reservation",
+        "on_submit": [
+            "hospitality_core.hospitality_core.utils.audit.hook_log_reservation",
+            "hospitality_core.hospitality_core.utils.notifications.hook_reservation_status"
+        ],
         "on_cancel": "hospitality_core.hospitality_core.utils.audit.hook_log_reservation",
         "on_update_after_submit": [
             "hospitality_core.hospitality_core.utils.audit.hook_log_reservation",
-            "hospitality_core.hospitality_core.api.housekeeping.hook_on_reservation_checkout"
+            "hospitality_core.hospitality_core.api.housekeeping.hook_on_reservation_checkout",
+            "hospitality_core.hospitality_core.utils.notifications.hook_reservation_status"
         ]
     },
     "Guest Folio": {
@@ -82,7 +86,8 @@ doc_events = {
     "Payment Entry": {
         "on_submit": [
             "hospitality_core.hospitality_core.api.payment_bridge.process_payment_entry",
-            "hospitality_core.hospitality_core.utils.audit.hook_log_payment"
+            "hospitality_core.hospitality_core.utils.audit.hook_log_payment",
+            "hospitality_core.hospitality_core.utils.notifications.hook_payment_receipt"
         ],
         "on_cancel": [
             "hospitality_core.hospitality_core.api.payment_bridge.process_payment_entry",
@@ -96,6 +101,7 @@ doc_events = {
 }
 
 after_install = "hospitality_core.setup.after_install"
+after_migrate = ["hospitality_core.hospitality_core.utils.notifications.ensure_email_templates"]
 
 # Scheduled Tasks
 # changed daily audit to run at 2 PM (14:00) per requirements
@@ -110,5 +116,11 @@ scheduler_events = {
 # Fixtures
 fixtures = [
     {"dt": "Custom Field", "filters": [["module", "=", "Hospitality Core"]]},
-    {"dt": "Property Setter", "filters": [["module", "=", "Hospitality Core"]]}
+    {"dt": "Property Setter", "filters": [["module", "=", "Hospitality Core"]]},
+    {"dt": "Email Template", "filters": [["name", "in", [
+        "Hospitality - Booking Confirmation",
+        "Hospitality - Check-in Welcome",
+        "Hospitality - Check-out Thanks",
+        "Hospitality - Payment Receipt",
+    ]]]}
 ]
