@@ -26,17 +26,39 @@ app_include_css = [
 ]
 
 
+# Multi-tenant scoping by Hotel Reception (User Permission driven)
+permission_query_conditions = {
+    "Hotel Room": "hospitality_core.hospitality_core.permissions.hotel_room_query",
+    "Hotel Reservation": "hospitality_core.hospitality_core.permissions.hotel_reservation_query",
+    "Guest Folio": "hospitality_core.hospitality_core.permissions.guest_folio_query",
+    "Hospitality Expense": "hospitality_core.hospitality_core.permissions.hospitality_expense_query",
+    "Folio Transaction": "hospitality_core.hospitality_core.permissions.folio_transaction_query",
+}
+
 # Document Events
 doc_events = {
+    "Hotel Reservation": {
+        "on_submit": "hospitality_core.hospitality_core.utils.audit.hook_log_reservation",
+        "on_cancel": "hospitality_core.hospitality_core.utils.audit.hook_log_reservation",
+        "on_update_after_submit": "hospitality_core.hospitality_core.utils.audit.hook_log_reservation"
+    },
     "Guest Folio": {
-        "on_update": "hospitality_core.hospitality_core.api.folio.sync_folio_balance"
+        "on_update": [
+            "hospitality_core.hospitality_core.api.folio.sync_folio_balance",
+            "hospitality_core.hospitality_core.utils.audit.hook_log_folio"
+        ]
     },
     "Folio Transaction": {
         "after_save": [
             "hospitality_core.hospitality_core.api.folio.sync_folio_balance",
-            "hospitality_core.hospitality_core.api.accounting.make_gl_entries_for_folio_transaction"
+            "hospitality_core.hospitality_core.api.accounting.make_gl_entries_for_folio_transaction",
+            "hospitality_core.hospitality_core.utils.audit.hook_log_folio_transaction"
         ],
         "on_trash": "hospitality_core.hospitality_core.api.folio.sync_folio_balance"
+    },
+    "Hospitality Expense": {
+        "on_submit": "hospitality_core.hospitality_core.utils.audit.hook_log_expense",
+        "on_cancel": "hospitality_core.hospitality_core.utils.audit.hook_log_expense"
     },
     "POS Invoice": {
         "on_submit": [
@@ -53,8 +75,14 @@ doc_events = {
         ]
     },
     "Payment Entry": {
-        "on_submit": "hospitality_core.hospitality_core.api.payment_bridge.process_payment_entry",
-        "on_cancel": "hospitality_core.hospitality_core.api.payment_bridge.process_payment_entry"
+        "on_submit": [
+            "hospitality_core.hospitality_core.api.payment_bridge.process_payment_entry",
+            "hospitality_core.hospitality_core.utils.audit.hook_log_payment"
+        ],
+        "on_cancel": [
+            "hospitality_core.hospitality_core.api.payment_bridge.process_payment_entry",
+            "hospitality_core.hospitality_core.utils.audit.hook_log_payment"
+        ]
     },
     "Sales Invoice": {
         "on_submit": "hospitality_core.api.composite_item_utils.process_composite_items_in_invoice",
