@@ -134,16 +134,19 @@ def get_revenue_expense_trend(from_date, to_date):
 			WHERE posting_date = %s AND is_void = 0
 			AND (reference_doctype != 'Payment Entry' OR reference_doctype IS NULL)
 		""", (d_str,))[0][0] or 0
-		
-		exp = frappe.db.get_value("Hospitality Expense", {"expense_date": d_str, "docstatus": 1}, "SUM(grand_total)") or 0
-		
+
+		exp = frappe.db.sql("""
+			SELECT SUM(grand_total) FROM `tabHospitality Expense`
+			WHERE expense_date = %s AND docstatus = 1
+		""", (d_str,))[0][0] or 0
+
 		dates.append(d_str)
 		revenue.append(flt(rev))
 		expenses.append(flt(exp))
 		curr += timedelta(days=1)
-		
+
 	return {
-		"labels": dates, 
+		"labels": dates,
 		"datasets": [
 			{"name": "Revenue", "values": revenue},
 			{"name": "Expenses", "values": expenses}
@@ -221,9 +224,12 @@ def get_gross_profit_margin_trend(from_date, to_date):
 			WHERE posting_date = %s AND is_void = 0
 			AND (reference_doctype != 'Payment Entry' OR reference_doctype IS NULL)
 		""", (d_str,))[0][0] or 0
-		
-		exp = frappe.db.get_value("Hospitality Expense", {"expense_date": d_str, "docstatus": 1}, "SUM(grand_total)") or 0
-		
+
+		exp = frappe.db.sql("""
+			SELECT SUM(grand_total) FROM `tabHospitality Expense`
+			WHERE expense_date = %s AND docstatus = 1
+		""", (d_str,))[0][0] or 0
+
 		dates.append(d_str)
 		margin = round(((flt(rev) - flt(exp)) / flt(rev)) * 100.0, 2) if flt(rev) > 0 else 0
 		values.append(margin)
@@ -252,4 +258,7 @@ def get_today_revenue():
 
 @frappe.whitelist()
 def get_today_expenses():
-	return frappe.db.get_value("Hospitality Expense", {"expense_date": nowdate(), "docstatus": 1}, "SUM(grand_total)") or 0
+	return frappe.db.sql("""
+		SELECT SUM(grand_total) FROM `tabHospitality Expense`
+		WHERE expense_date = %s AND docstatus = 1
+	""", (nowdate(),))[0][0] or 0
