@@ -107,11 +107,27 @@ after_install = "hospitality_core.setup.after_install"
 after_migrate = ["hospitality_core.hospitality_core.utils.notifications.ensure_email_templates"]
 
 # Scheduled Tasks
-# changed daily audit to run at 2 PM (14:00) per requirements
+# Daily night audit kept at 14:00 per existing requirement.
+# Hourly + early-morning operational sweeps added for housekeeping SLA,
+# loyalty expiry, lost-and-found disposal, audit-log retention, and
+# late-checkout reminders.
 scheduler_events = {
+    "hourly": [
+        "hospitality_core.hospitality_core.tasks.hourly_check_housekeeping_sla",
+        "hospitality_core.hospitality_core.tasks.hourly_remind_late_checkouts"
+    ],
     "cron": {
         "0 14 * * *": [
             "hospitality_core.hospitality_core.api.night_audit.run_daily_audit"
+        ],
+        "0 2 * * *": [
+            "hospitality_core.hospitality_core.tasks.daily_prune_audit_log"
+        ],
+        "0 3 * * *": [
+            "hospitality_core.hospitality_core.tasks.daily_expire_loyalty_points"
+        ],
+        "0 4 * * *": [
+            "hospitality_core.hospitality_core.tasks.daily_dispose_lost_items"
         ]
     }
 }
