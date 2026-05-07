@@ -104,7 +104,10 @@ doc_events = {
 }
 
 after_install = "hospitality_core.setup.after_install"
-after_migrate = ["hospitality_core.hospitality_core.utils.notifications.ensure_email_templates"]
+after_migrate = [
+    "hospitality_core.hospitality_core.utils.notifications.ensure_email_templates",
+    "hospitality_core.hospitality_core.api.tax.ensure_tax_template_field",
+]
 
 # Scheduled Tasks
 # Daily night audit kept at 14:00 per existing requirement.
