@@ -5,6 +5,15 @@ app_description = "Hotel Management Module"
 app_email = "braimahgifted@gmail.com"
 app_license = "gpl-2.0"
 
+add_to_apps_screen = [
+    {
+        "name": app_name,
+        "logo": "/assets/hospitality_core/images/hospitality-core-logo.svg",
+        "title": app_title,
+        "route": "/app/hospitality",
+    }
+]
+
 app_include_js = [
     "/assets/hospitality_core/js/hospitality_analytics_final.js",
     "/assets/hospitality_core/js/pos_room_selection.js",
