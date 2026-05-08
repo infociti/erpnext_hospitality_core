@@ -22,25 +22,32 @@ import time
 import frappe
 from frappe import _
 from frappe.rate_limiter import rate_limit
-from frappe.utils import flt, getdate
-
-from hospitality_core.hospitality_core.api.concierge import open_request as _open_concierge
-from hospitality_core.hospitality_core.api.minibar import record_consumption as _record_minibar
+from frappe.utils import flt, getdate, now_datetime
 
 _TOKEN_TTL_SECONDS = 60 * 60 * 12  # 12h
 _OPEN_RES_STATUSES = ("Reserved", "Checked In")
 
 
 def _site_secret() -> str:
-	"""Per-site signing secret. Falls back to encryption_key, then to the
-	site name — sufficient given tokens carry their own expiry."""
+	"""Per-site signing secret. Required — no public-name fallback because
+	the site domain is publicly known (DNS, TLS SNI) and would let an
+	attacker forge tokens. Set `hospitality_guest_secret` in site_config
+	or rely on Frappe's `encryption_key`."""
 	conf = frappe.local.conf
-	return (
+	secret = (
 		conf.get("hospitality_guest_secret")
 		or conf.get("encryption_key")
 		or conf.get("secret_key")
-		or frappe.local.site
 	)
+	if not secret:
+		frappe.throw(
+			_(
+				"Guest mobile auth is not configured. Set `hospitality_guest_secret` "
+				"or `encryption_key` in site_config.json."
+			),
+			frappe.AuthenticationError,
+		)
+	return secret
 
 
 def _sign(payload: str) -> str:
@@ -237,44 +244,80 @@ def my_folio_summary(token: str) -> dict:
 	}
 
 
+_ALLOWED_AMENITY_CATEGORIES = (
+	"Housekeeping",
+	"Engineering",
+	"Concierge",
+	"Room Service",
+	"Other",
+)
+
+
 @frappe.whitelist(allow_guest=True, methods=["POST"])
 def request_amenity(token: str, category: str, message: str | None = None) -> dict:
-	"""Generic amenity / housekeeping request. Funnels into a Concierge
-	Request — staff workflow lives there."""
+	"""Open a Concierge Request scoped to the verified reservation.
+
+	Token gives us the reservation; we derive room + guest server-side so
+	the guest cannot inject fields. The doc is created with
+	ignore_permissions=True (the guest is not a Frappe User) but the
+	scope is server-trusted — we never elevate the request session.
+	"""
 	reservation = _verify_token(token)
-	room = frappe.db.get_value("Hotel Reservation", reservation, "room")
-	if not room:
+	if (category or "").strip() not in _ALLOWED_AMENITY_CATEGORIES:
+		frappe.throw(_("Unsupported amenity category."))
+	res = frappe.db.get_value(
+		"Hotel Reservation", reservation, ["room", "guest"], as_dict=True
+	)
+	if not res or not res.room:
 		frappe.throw(_("Your room has not been assigned yet."))
-	# Pretend to be system user for the create — guest tokens are not
-	# Frappe Users, so we bypass permissions here.
-	original = frappe.session.user
-	try:
-		frappe.set_user("Administrator")
-		result = _open_concierge(
-			reservation=reservation,
-			category=category,
-			message=message or "",
-		)
-	finally:
-		frappe.set_user(original)
-	return result
+	subject = (message or category or "Guest request").strip()[:140]
+	doc = frappe.get_doc(
+		{
+			"doctype": "Concierge Request",
+			"subject": subject,
+			"category": category,
+			"guest": res.guest,
+			"room": res.room,
+			"priority": "Normal",
+			"details": (message or "").strip()[:2000] or None,
+			"status": "Open",
+		}
+	)
+	doc.insert(ignore_permissions=True)
+	return {"name": doc.name, "status": doc.status}
 
 
 @frappe.whitelist(allow_guest=True, methods=["POST"])
 def request_minibar(token: str, item: str, quantity: float = 1) -> dict:
-	"""Self-charged minibar request from the in-room device. Posts directly
-	to the active folio via the existing minibar pipeline."""
+	"""Record a guest-initiated minibar consumption against the verified
+	reservation's room. Server-derives the room from the token; client
+	supplies only item + quantity."""
 	reservation = _verify_token(token)
+	qty = flt(quantity)
+	if qty <= 0:
+		frappe.throw(_("Quantity must be positive."))
 	room = frappe.db.get_value("Hotel Reservation", reservation, "room")
 	if not room:
 		frappe.throw(_("Your room has not been assigned yet."))
-	original = frappe.session.user
-	try:
-		frappe.set_user("Administrator")
-		result = _record_minibar(room=room, item=item, quantity=flt(quantity))
-	finally:
-		frappe.set_user(original)
-	return result
+	if not frappe.db.exists("Minibar Item", {"name": item, "enabled": 1}):
+		frappe.throw(_("Item is not available."))
+	doc = frappe.get_doc(
+		{
+			"doctype": "Minibar Consumption",
+			"room": room,
+			"item": item,
+			"quantity": qty,
+			"consumed_at": now_datetime(),
+			"notes": "guest:self-served",
+		}
+	)
+	doc.insert(ignore_permissions=True)
+	return {
+		"name": doc.name,
+		"amount": flt(doc.amount),
+		"guest_folio": doc.guest_folio,
+		"posted": bool(doc.guest_folio),
+	}
 
 
 @frappe.whitelist(allow_guest=True, methods=["POST"])
@@ -288,12 +331,12 @@ def request_concierge(token: str, category: str, message: str) -> dict:
 
 @frappe.whitelist(allow_guest=True, methods=["GET"])
 def list_minibar_catalog(token: str) -> list[dict]:
-	"""Public catalog visible to authenticated guests — wraps the staff
-	endpoint with a token check."""
+	"""Catalog of enabled minibar items, gated by a valid guest token."""
 	_verify_token(token)
 	return frappe.get_all(
 		"Minibar Item",
 		fields=["name", "code", "item_name", "price", "category", "description"],
 		filters={"enabled": 1},
 		order_by="category asc, item_name asc",
+		ignore_permissions=True,
 	)

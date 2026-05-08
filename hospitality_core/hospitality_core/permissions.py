@@ -3,8 +3,13 @@
 Each property is identified by Hotel Reception. A user is granted access to
 a reception by adding a User Permission (allow=Hotel Reception, for_value=<reception>).
 
-System Manager and Administrator bypass scoping. Users with no Hotel Reception
-permissions see no records (returns ``1=0``).
+System Manager / Hospitality Manager / Administrator bypass scoping.
+
+Failure mode: a user with **no** Hotel Reception permissions sees **no rows**
+(``1=0``). We do not surface ``hotel_reception IS NULL`` rows because that
+would unintentionally leak any orphan record (e.g. a misconfigured audit
+log entry). Operators should explicitly grant a reception permission to
+each non-bypass user.
 """
 
 from __future__ import annotations
@@ -43,9 +48,9 @@ def _scope_clause(user: str, doctype: str, alias: str) -> str:
 		return ""
 	receptions = _user_receptions(user, doctype)
 	if not receptions:
-		return f"{alias}.hotel_reception IS NULL"
+		return "1=0"
 	placeholders = ", ".join(frappe.db.escape(r) for r in receptions)
-	return f"({alias}.hotel_reception IN ({placeholders}) OR {alias}.hotel_reception IS NULL)"
+	return f"{alias}.hotel_reception IN ({placeholders})"
 
 
 def hotel_room_query(user: str | None = None) -> str:
@@ -86,14 +91,12 @@ def loyalty_entry_query(user: str | None = None) -> str:
 		return ""
 	receptions = _user_receptions(user, "Hotel Reservation")
 	if not receptions:
-		return "`tabHospitality Loyalty Entry`.reservation IS NULL"
+		return "1=0"
 	placeholders = ", ".join(frappe.db.escape(r) for r in receptions)
 	return (
-		f"(EXISTS (SELECT 1 FROM `tabHotel Reservation` `res_scope` "
+		f"EXISTS (SELECT 1 FROM `tabHotel Reservation` `res_scope` "
 		f"WHERE `res_scope`.name = `tabHospitality Loyalty Entry`.reservation "
-		f"AND `res_scope`.hotel_reception IN ({placeholders})) "
-		f"OR `tabHospitality Loyalty Entry`.reservation IS NULL "
-		f"OR `tabHospitality Loyalty Entry`.reservation = '')"
+		f"AND `res_scope`.hotel_reception IN ({placeholders}))"
 	)
 
 
@@ -111,14 +114,12 @@ def hotel_maintenance_request_query(user: str | None = None) -> str:
 		return ""
 	receptions = _user_receptions(user, "Hotel Room")
 	if not receptions:
-		return "`tabHotel Maintenance Request`.room IS NULL"
+		return "1=0"
 	placeholders = ", ".join(frappe.db.escape(r) for r in receptions)
 	return (
-		f"(EXISTS (SELECT 1 FROM `tabHotel Room` `rm_scope` "
+		f"EXISTS (SELECT 1 FROM `tabHotel Room` `rm_scope` "
 		f"WHERE `rm_scope`.name = `tabHotel Maintenance Request`.room "
-		f"AND `rm_scope`.hotel_reception IN ({placeholders})) "
-		f"OR `tabHotel Maintenance Request`.room IS NULL "
-		f"OR `tabHotel Maintenance Request`.room = '')"
+		f"AND `rm_scope`.hotel_reception IN ({placeholders}))"
 	)
 
 
@@ -132,17 +133,12 @@ def folio_transaction_query(user: str | None = None) -> str:
 		return ""
 	receptions = _user_receptions(user, "Guest Folio")
 	if not receptions:
-		return (
-			"NOT EXISTS (SELECT 1 FROM `tabGuest Folio` `gf_scope` "
-			"WHERE `gf_scope`.name = `tabFolio Transaction`.parent "
-			"AND `gf_scope`.hotel_reception IS NOT NULL)"
-		)
+		return "1=0"
 	placeholders = ", ".join(frappe.db.escape(r) for r in receptions)
 	return (
-		f"(EXISTS (SELECT 1 FROM `tabGuest Folio` `gf_scope` "
+		f"EXISTS (SELECT 1 FROM `tabGuest Folio` `gf_scope` "
 		f"WHERE `gf_scope`.name = `tabFolio Transaction`.parent "
-		f"AND (`gf_scope`.hotel_reception IN ({placeholders}) OR `gf_scope`.hotel_reception IS NULL)) "
-		f"OR `tabFolio Transaction`.parent IS NULL OR `tabFolio Transaction`.parent = '')"
+		f"AND `gf_scope`.hotel_reception IN ({placeholders}))"
 	)
 
 

@@ -281,16 +281,13 @@ def post_tax_for_amount(
 	if not breakdown["lines"]:
 		return []
 
+	# TAX item is provisioned by setup.ensure_tax_item / create_default_data;
+	# fail loudly if it's missing rather than silently creating master data
+	# from a posting hook.
 	if not frappe.db.exists("Item", "TAX"):
-		frappe.get_doc(
-			{
-				"doctype": "Item",
-				"item_code": "TAX",
-				"item_name": "Hospitality Tax",
-				"item_group": "Services",
-				"is_stock_item": 0,
-			}
-		).insert(ignore_permissions=True)
+		frappe.throw(
+			_("TAX item is missing. Run `bench migrate` to provision it."),
+		)
 
 	posting_date = posting_date or nowdate()
 	inserted: list[str] = []

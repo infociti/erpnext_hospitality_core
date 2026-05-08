@@ -70,6 +70,7 @@ def create_default_data():
         {"code": "ROOM-RENT", "name": "Room Rent"},
         {"code": "POS-CHARGE", "name": "POS Charge"},
         {"code": "PAYMENT", "name": "Payment Credit"},
+        {"code": "TAX", "name": "Hospitality Tax"},
     ]
     for i in items:
         if not frappe.db.exists("Item", i["code"]):
@@ -83,3 +84,18 @@ def create_default_data():
             )
             item.is_stock_item = 0
             item.insert(ignore_permissions=True)
+
+
+def ensure_tax_item():
+    """after_migrate hook — guarantees the TAX item exists on existing
+    installs that pre-date its addition to create_default_data."""
+    if frappe.db.exists("Item", "TAX"):
+        return
+    item = frappe.new_doc("Item")
+    item.item_code = "TAX"
+    item.item_name = "Hospitality Tax"
+    item.item_group = (
+        "Services" if frappe.db.exists("Item Group", "Services") else "All Item Groups"
+    )
+    item.is_stock_item = 0
+    item.insert(ignore_permissions=True)

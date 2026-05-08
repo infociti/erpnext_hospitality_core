@@ -24,28 +24,24 @@ AUDIT_LOG_RETENTION_DAYS = 365
 # ---------- Daily ----------------------------------------------------------
 
 def daily_expire_loyalty_points() -> None:
-	"""Expire Earn entries older than LOYALTY_EXPIRY_MONTHS by writing an
-	offsetting Expiry entry per guest. Idempotent — only un-expired Earn
-	rows that fall outside the window are considered."""
+	"""Expire each unexpired Earn entry older than LOYALTY_EXPIRY_MONTHS
+	by writing an offsetting Expiry entry that links back via
+	``source_entry``. Idempotent because we anti-join on the FK — running
+	twice in a day is a no-op."""
 	cutoff = add_to_date(nowdate(), months=-LOYALTY_EXPIRY_MONTHS)
 	rows = frappe.db.sql(
 		"""
-		SELECT guest, SUM(points) AS to_expire
-		FROM `tabHospitality Loyalty Entry`
-		WHERE entry_type = 'Earn'
-		AND DATE(creation) < %(cutoff)s
-		AND name NOT IN (
-			SELECT IFNULL(le.notes, '')
-			FROM `tabHospitality Loyalty Entry` le
-			WHERE le.entry_type = 'Expiry'
-		)
-		AND guest NOT IN (
-			SELECT guest FROM `tabHospitality Loyalty Entry`
-			WHERE entry_type = 'Expiry'
-			AND DATE(creation) >= %(cutoff)s
-		)
-		GROUP BY guest
-		HAVING to_expire > 0
+		SELECT earn.name AS earn_name, earn.guest, earn.points
+		FROM `tabHospitality Loyalty Entry` earn
+		LEFT JOIN `tabHospitality Loyalty Entry` exp
+			ON exp.source_entry = earn.name
+			AND exp.entry_type = 'Expiry'
+		WHERE earn.entry_type = 'Earn'
+		AND DATE(earn.creation) < %(cutoff)s
+		AND earn.points > 0
+		AND exp.name IS NULL
+		ORDER BY earn.creation ASC
+		LIMIT 5000
 		""",
 		{"cutoff": cutoff},
 		as_dict=True,
@@ -59,19 +55,20 @@ def daily_expire_loyalty_points() -> None:
 					"doctype": "Hospitality Loyalty Entry",
 					"guest": row.guest,
 					"entry_type": "Expiry",
-					"points": flt(row.to_expire),
-					"notes": f"Auto-expiry of points earned before {cutoff}",
+					"points": flt(row.points),
+					"source_entry": row.earn_name,
+					"notes": f"Auto-expiry of {row.earn_name} (earned before {cutoff})",
 				}
 			)
 			doc.insert(ignore_permissions=True)
 			expired_count += 1
 		except Exception:
-			frappe.log_error(title=f"Loyalty expiry failed for {row.guest}")
+			frappe.log_error(title=f"Loyalty expiry failed for {row.earn_name}")
 
 	if expired_count:
 		log_event(
 			"loyalty.expiry_run",
-			payload={"cutoff": str(cutoff), "guests_affected": expired_count},
+			payload={"cutoff": str(cutoff), "entries_expired": expired_count},
 		)
 	frappe.db.commit()
 
@@ -124,19 +121,23 @@ def hourly_check_housekeeping_sla() -> None:
 	now = now_datetime()
 	pending_cutoff = add_to_date(now, hours=-HK_PENDING_BREACH_HOURS)
 	in_prog_cutoff = add_to_date(now, hours=-HK_IN_PROGRESS_BREACH_HOURS)
+	# Anything older than 7 days has already breached and been escalated;
+	# bound the scan so this stays cheap as the table grows.
+	scan_floor = add_to_date(now, days=-7)
 
 	breached = frappe.db.sql(
 		"""
 		SELECT name, room, status, priority, requested_at, started_at, hotel_reception
 		FROM `tabHousekeeping Task`
 		WHERE priority != 'Urgent'
+		AND requested_at >= %(floor)s
 		AND (
 			(status = 'Pending'  AND requested_at < %(pcut)s)
 			OR (status = 'Assigned' AND requested_at < %(pcut)s)
 			OR (status = 'In Progress' AND started_at < %(icut)s)
 		)
 		""",
-		{"pcut": pending_cutoff, "icut": in_prog_cutoff},
+		{"pcut": pending_cutoff, "icut": in_prog_cutoff, "floor": scan_floor},
 		as_dict=True,
 	)
 

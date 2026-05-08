@@ -14,6 +14,7 @@
   "reservation",
   "folio",
   "amount_basis",
+  "source_entry",
   "section_break_1",
   "notes"
  ],
@@ -67,6 +68,14 @@
    "fieldname": "amount_basis",
    "fieldtype": "Currency",
    "label": "Amount Basis"
+  },
+  {
+   "description": "For 'Expiry' entries: the Earn entry being offset.",
+   "fieldname": "source_entry",
+   "fieldtype": "Link",
+   "label": "Source Entry",
+   "options": "Hospitality Loyalty Entry",
+   "search_index": 1
   },
   {
    "fieldname": "section_break_1",
