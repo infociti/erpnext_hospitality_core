@@ -170,10 +170,12 @@ def _rooms_sold_per_night(
 def _revenue_per_night(
 	receptions: Sequence[str], from_date, to_date
 ) -> dict[str, float]:
-	"""Sum room-revenue folio transactions per posting_date across receptions.
+	"""Sum net room-revenue folio transactions per posting_date across receptions.
 
 	A folio transaction counts as room revenue if the item code starts
-	with 'ROOM' or equals 'NIGHT-AUDIT'. Voided rows excluded.
+	with 'ROOM' or equals 'NIGHT-AUDIT'. Voided rows excluded. Negative
+	amounts (refunds, credits) are summed in so revenue reflects the net
+	posted to the GL, matching how ADR/RevPAR are reported elsewhere.
 	Reception scoping is via the parent Guest Folio's reservation.
 	"""
 	if not receptions:
@@ -186,7 +188,6 @@ def _revenue_per_night(
 		INNER JOIN `tabGuest Folio` gf ON gf.name = ft.parent
 		LEFT JOIN `tabHotel Reservation` hr ON hr.name = gf.reservation
 		WHERE ft.is_void = 0
-		AND ft.amount > 0
 		AND (
 			ft.item LIKE 'ROOM%%'
 			OR ft.item = 'NIGHT-AUDIT'

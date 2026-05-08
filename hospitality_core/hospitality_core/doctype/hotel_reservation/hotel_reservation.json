@@ -49,7 +49,8 @@
             "in_standard_filter": 1,
             "label": "Hotel Reception",
             "options": "Hotel Reception",
-            "reqd": 1
+            "reqd": 1,
+            "search_index": 1
         },
         {
             "fieldname": "reserved_by",
@@ -90,7 +91,8 @@
             "in_standard_filter": 1,
             "label": "Room",
             "options": "Hotel Room",
-            "reqd": 1
+            "reqd": 1,
+            "search_index": 1
         },
         {
             "fieldname": "column_break_1",
@@ -107,7 +109,8 @@
             "label": "Booking Status",
             "options": "Reserved\nChecked In\nChecked Out\nCancelled",
             "read_only": 1,
-            "reqd": 1
+            "reqd": 1,
+            "search_index": 1
         },
         {
             "fieldname": "arrival_date",
@@ -116,14 +119,16 @@
             "in_list_view": 1,
             "in_standard_filter": 1,
             "label": "Arrival Date",
-            "reqd": 1
+            "reqd": 1,
+            "search_index": 1
         },
         {
             "fieldname": "departure_date",
             "fieldtype": "Date",
             "in_list_view": 1,
             "label": "Departure Date",
-            "reqd": 1
+            "reqd": 1,
+            "search_index": 1
         },
         {
             "fieldname": "arriving_from",

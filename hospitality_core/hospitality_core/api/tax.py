@@ -116,17 +116,19 @@ def compute_tax_breakdown(
 			previous_total=running_total,
 			previous_row_amount=prev_amount,
 		)
-		if amount == 0 and not include_zero_rows:
-			continue
-		lines.append(
-			{
-				"description": r.description or _("Tax"),
-				"rate": flt(r.rate),
-				"amount": flt(amount),
-				"account_head": r.account_head,
-				"charge_type": r.charge_type,
-			}
-		)
+		# Always advance the chain — downstream "On Previous Row" rows
+		# need to see this row's amount even when it's zero. Only the
+		# output `lines` array gets pruned of zero rows.
+		if amount != 0 or include_zero_rows:
+			lines.append(
+				{
+					"description": r.description or _("Tax"),
+					"rate": flt(r.rate),
+					"amount": flt(amount),
+					"account_head": r.account_head,
+					"charge_type": r.charge_type,
+				}
+			)
 		running_total += amount
 		prev_amount = flt(amount)
 

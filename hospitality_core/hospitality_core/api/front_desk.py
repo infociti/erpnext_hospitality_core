@@ -182,20 +182,25 @@ def list_group_arrivals_today(hotel_reception: str | None = None) -> list[dict]:
 
 
 def _coerce_list(value: str | list[str]) -> list[str]:
-	if isinstance(value, str):
-		try:
-			parsed = json.loads(value)
-		except (ValueError, TypeError):
-			# Treat as comma-separated string
-			parsed = [v.strip() for v in value.split(",") if v.strip()]
-		if isinstance(parsed, list):
-			return [str(v).strip() for v in parsed if str(v).strip()]
-		if isinstance(parsed, str):
-			return [parsed]
-		return []
+	"""Accept a list, a JSON-encoded list, or a comma-separated string.
+
+	JSON-array form is detected by a leading `[` so bare-token strings
+	like "RES-001" or "true" don't get silently parsed as JSON scalars
+	and lost. Anything else falls through to CSV split.
+	"""
 	if isinstance(value, list):
 		return [str(v).strip() for v in value if str(v).strip()]
-	return []
+	if not isinstance(value, str):
+		return []
+	s = value.strip()
+	if s.startswith("["):
+		try:
+			parsed = json.loads(s)
+			if isinstance(parsed, list):
+				return [str(v).strip() for v in parsed if str(v).strip()]
+		except (ValueError, TypeError):
+			pass
+	return [v.strip() for v in s.split(",") if v.strip()]
 
 
 def _summarise(r: dict) -> dict:

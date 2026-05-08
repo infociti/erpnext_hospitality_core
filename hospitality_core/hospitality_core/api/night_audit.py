@@ -79,11 +79,15 @@ def get_room_rent_item_codes():
     return frappe.db.sql_list("SELECT name FROM `tabItem` WHERE item_code='ROOM-RENT' OR item_group='Accommodation'")
 
 def handle_overstay(res):
+    from frappe.desk.doctype.tag.tag import add_tag
+
     new_departure = add_days(nowdate(), 1)
     # Use db.set_value to skip validation when auto-extending overstays
     # This prevents conflicts with other reservations in the same room
     frappe.db.set_value("Hotel Reservation", res.name, "departure_date", new_departure)
-    frappe.db.set_value("Hotel Reservation", res.name, "_user_tags", "Overstay")
+    # add_tag updates _user_tags AND creates the Tag master so the tag
+    # appears in the standard list-view filter UI.
+    add_tag("Overstay", "Hotel Reservation", res.name)
     # Add system comment to track the extension
     doc = frappe.get_doc("Hotel Reservation", res.name)
     doc.add_comment("Info", _("Auto-Extended: Guest still in-house at 2 PM."))
