@@ -13,8 +13,6 @@ materialising an Invoice.
 
 from __future__ import annotations
 
-from collections.abc import Iterable
-
 import frappe
 from frappe import _
 from frappe.utils import flt
@@ -92,7 +90,9 @@ def compute_tax_breakdown(
 		"grand_total": base,
 		"template": template,
 	}
-	if not template or base <= 0:
+	# Allow negative base (refunds reverse the original tax). Skip exact 0
+	# because there's nothing to tax. Skip when no template is configured.
+	if not template or base == 0:
 		return zero_result
 
 	rows = frappe.db.get_all(
@@ -203,7 +203,7 @@ def quote_with_tax(
 @frappe.whitelist()
 def preview_reservation_taxes(reservation: str) -> dict:
 	"""Compute taxes for an existing reservation's expected room revenue
-	(rate × nights). Useful for showing the guest a tax-inclusive total
+	(rate x nights). Useful for showing the guest a tax-inclusive total
 	before posting nightly room charges."""
 	res = frappe.db.get_value(
 		"Hotel Reservation",
@@ -233,8 +233,9 @@ def preview_reservation_taxes(reservation: str) -> dict:
 			"is_complimentary": True,
 		}
 
-	from hospitality_core.hospitality_core.api.booking import _resolve_base_rate, _resolve_rate_from_plan
 	from frappe.utils import date_diff
+
+	from hospitality_core.hospitality_core.api.booking import _resolve_base_rate, _resolve_rate_from_plan
 
 	rate = _resolve_rate_from_plan(res.rate_plan, res.room_type, res.arrival_date)
 	if not rate:
@@ -268,6 +269,10 @@ def post_tax_for_amount(
 	Caller is responsible for posting the underlying revenue line first.
 	The tax row uses the special item code 'TAX' (auto-created if absent)
 	so downstream GL hooks and reports can recognise tax postings.
+
+	Note: this function is **not** idempotent — it always inserts new
+	rows. Callers running in a retry loop must either dedupe by their
+	own reference or wrap calls in a savepoint they roll back on retry.
 	"""
 	from frappe.utils import nowdate
 

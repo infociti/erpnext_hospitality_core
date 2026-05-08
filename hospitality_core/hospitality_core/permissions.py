@@ -11,7 +11,6 @@ from __future__ import annotations
 
 import frappe
 
-
 _BYPASS_ROLES = {"System Manager", "Hospitality Manager", "Administrator"}
 
 
@@ -95,6 +94,31 @@ def loyalty_entry_query(user: str | None = None) -> str:
 		f"AND `res_scope`.hotel_reception IN ({placeholders})) "
 		f"OR `tabHospitality Loyalty Entry`.reservation IS NULL "
 		f"OR `tabHospitality Loyalty Entry`.reservation = '')"
+	)
+
+
+def hospitality_audit_log_query(user: str | None = None) -> str:
+	return _scope_clause(user, "Hospitality Audit Log", "`tabHospitality Audit Log`")
+
+
+def hotel_maintenance_request_query(user: str | None = None) -> str:
+	"""Maintenance requests reference a Hotel Room — scope via that room's reception."""
+	if not user:
+		user = frappe.session.user or "Guest"
+	if user == "Guest":
+		return "1=0"
+	if _bypass(user):
+		return ""
+	receptions = _user_receptions(user, "Hotel Room")
+	if not receptions:
+		return "`tabHotel Maintenance Request`.room IS NULL"
+	placeholders = ", ".join(frappe.db.escape(r) for r in receptions)
+	return (
+		f"(EXISTS (SELECT 1 FROM `tabHotel Room` `rm_scope` "
+		f"WHERE `rm_scope`.name = `tabHotel Maintenance Request`.room "
+		f"AND `rm_scope`.hotel_reception IN ({placeholders})) "
+		f"OR `tabHotel Maintenance Request`.room IS NULL "
+		f"OR `tabHotel Maintenance Request`.room = '')"
 	)
 
 

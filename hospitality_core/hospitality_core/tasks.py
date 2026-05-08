@@ -12,7 +12,6 @@ from frappe.utils import add_days, add_to_date, flt, get_datetime, getdate, now_
 
 from hospitality_core.hospitality_core.utils.audit import log_event
 
-
 # Default operational windows (could be moved to a Singleton settings doc later)
 LOYALTY_EXPIRY_MONTHS = 12
 LOST_FOUND_DISPOSE_DAYS = 90

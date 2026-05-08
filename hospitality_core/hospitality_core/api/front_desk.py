@@ -24,61 +24,40 @@ def batch_check_in(reservations: str | list[str], stop_on_error: int = 0) -> dic
 	"""Check-in multiple reservations in one call.
 
 	Accepts either a list or a JSON-encoded list of reservation names.
-	Each entry is processed independently and a per-reservation result
-	is returned. If `stop_on_error` is true, the first failure aborts
-	the batch.
+	Each entry is processed in its own SAVEPOINT so a single failure
+	rolls back only that row — earlier successes survive. Set
+	`stop_on_error` to halt the batch on the first failure.
 	"""
-	names = _coerce_list(reservations)
-	if not names:
-		frappe.throw(_("No reservations supplied."))
-
-	results: list[dict] = []
-	succeeded = 0
-	for name in names:
-		try:
-			doc = frappe.get_doc("Hotel Reservation", name)
-			doc.process_check_in()
-			results.append({"reservation": name, "status": "Checked In", "ok": True})
-			succeeded += 1
-		except Exception as exc:
-			frappe.db.rollback()
-			results.append(
-				{
-					"reservation": name,
-					"ok": False,
-					"error": str(exc),
-				}
-			)
-			if int(stop_on_error or 0):
-				break
-
-	return {
-		"succeeded": succeeded,
-		"failed": len(results) - succeeded,
-		"total": len(results),
-		"results": results,
-	}
+	return _run_batch(reservations, "process_check_in", "Checked In", int(stop_on_error or 0))
 
 
 @frappe.whitelist(methods=["POST"])
 def batch_check_out(reservations: str | list[str], stop_on_error: int = 0) -> dict:
 	"""Symmetric counterpart to batch_check_in."""
+	return _run_batch(reservations, "process_check_out", "Checked Out", int(stop_on_error or 0))
+
+
+def _run_batch(reservations, method_name: str, ok_status: str, stop_on_error: int) -> dict:
 	names = _coerce_list(reservations)
 	if not names:
 		frappe.throw(_("No reservations supplied."))
 
 	results: list[dict] = []
 	succeeded = 0
-	for name in names:
+	for idx, name in enumerate(names):
+		# Per-row savepoint: rolls back this row's writes only,
+		# preserving successful peers committed in the same transaction.
+		sp = f"hc_batch_{idx}"
+		frappe.db.savepoint(sp)
 		try:
 			doc = frappe.get_doc("Hotel Reservation", name)
-			doc.process_check_out()
-			results.append({"reservation": name, "status": "Checked Out", "ok": True})
+			getattr(doc, method_name)()
+			results.append({"reservation": name, "status": ok_status, "ok": True})
 			succeeded += 1
 		except Exception as exc:
-			frappe.db.rollback()
+			frappe.db.rollback(save_point=sp)
 			results.append({"reservation": name, "ok": False, "error": str(exc)})
-			if int(stop_on_error or 0):
+			if stop_on_error:
 				break
 
 	return {
@@ -104,7 +83,6 @@ def walk_list(hotel_reception: str | None = None, on_date: str | None = None) ->
 	folio outstanding balance for at-a-glance decisioning.
 	"""
 	on_date = on_date or nowdate()
-	rec_filter = {"hotel_reception": hotel_reception} if hotel_reception else {}
 
 	rows = frappe.db.sql(
 		"""

@@ -37,6 +37,8 @@ permission_query_conditions = {
     "Concierge Request": "hospitality_core.hospitality_core.permissions.concierge_request_query",
     "Hospitality Loyalty Entry": "hospitality_core.hospitality_core.permissions.loyalty_entry_query",
     "Minibar Consumption": "hospitality_core.hospitality_core.permissions.minibar_consumption_query",
+    "Hospitality Audit Log": "hospitality_core.hospitality_core.permissions.hospitality_audit_log_query",
+    "Hotel Maintenance Request": "hospitality_core.hospitality_core.permissions.hotel_maintenance_request_query",
 }
 
 # Document Events

@@ -21,11 +21,11 @@ import time
 
 import frappe
 from frappe import _
+from frappe.rate_limiter import rate_limit
 from frappe.utils import flt, getdate
 
 from hospitality_core.hospitality_core.api.concierge import open_request as _open_concierge
 from hospitality_core.hospitality_core.api.minibar import record_consumption as _record_minibar
-
 
 _TOKEN_TTL_SECONDS = 60 * 60 * 12  # 12h
 _OPEN_RES_STATUSES = ("Reserved", "Checked In")
@@ -82,11 +82,17 @@ def _last4(value: str | None) -> str | None:
 
 
 @frappe.whitelist(allow_guest=True, methods=["POST"])
+@rate_limit(key="reservation", limit=10, seconds=60 * 60, ip_based=True)
 def request_token(reservation: str, last4: str) -> dict:
 	"""Issue a token after matching reservation + last-4 of stored ID/mobile.
 
 	The reservation must be in Reserved or Checked In status; we don't issue
 	tokens for cancelled or checked-out stays.
+
+	Rate-limited to 10 attempts per hour per (IP, reservation). Last-4 is
+	a 4-character secret — without throttling, brute-force is trivial.
+	Failed attempts are logged for security review; a successful mint
+	is recorded in the audit log so misuse can be traced.
 	"""
 	if not reservation or not last4:
 		frappe.throw(_("reservation and last4 are required."))
@@ -97,8 +103,10 @@ def request_token(reservation: str, last4: str) -> dict:
 		as_dict=True,
 	)
 	if not res:
+		_log_token_attempt(reservation, ok=False, reason="not_found")
 		frappe.throw(_("Reservation not found."), frappe.AuthenticationError)
 	if res.status not in _OPEN_RES_STATUSES:
+		_log_token_attempt(reservation, ok=False, reason=f"status={res.status}")
 		frappe.throw(_("Reservation is not active."), frappe.AuthenticationError)
 
 	guest = frappe.db.get_value(
@@ -106,13 +114,27 @@ def request_token(reservation: str, last4: str) -> dict:
 		res.guest,
 		["mobile_no", "identification_no"],
 		as_dict=True,
-	)
-	candidates = {_last4(guest.mobile_no), _last4(guest.identification_no)}
+	) or frappe._dict()
+	candidates = {_last4(guest.get("mobile_no")), _last4(guest.get("identification_no"))}
 	candidates.discard(None)
 	if _last4(last4) not in candidates:
+		_log_token_attempt(reservation, ok=False, reason="last4_mismatch")
 		frappe.throw(_("Verification details do not match."), frappe.AuthenticationError)
 
+	_log_token_attempt(reservation, ok=True)
 	return _mint_token(res.name)
+
+
+def _log_token_attempt(reservation: str, *, ok: bool, reason: str | None = None) -> None:
+	"""Best-effort audit trail. Swallow logger failures so auth path stays clean."""
+	try:
+		ip = getattr(frappe.local, "request_ip", None) if hasattr(frappe, "local") else None
+		message = f"{'OK' if ok else 'FAIL'} reservation={reservation} ip={ip or '-'}"
+		if reason:
+			message += f" reason={reason}"
+		frappe.logger("hospitality_core.guest_mobile").info(message)
+	except Exception:
+		pass
 
 
 @frappe.whitelist(allow_guest=True, methods=["GET"])
