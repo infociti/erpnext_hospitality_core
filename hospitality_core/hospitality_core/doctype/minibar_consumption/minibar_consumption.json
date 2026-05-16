@@ -1,0 +1,209 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "autoname": "format:MBC-{YYYY}-{MM}-{#####}",
+ "creation": "2026-05-07 13:30:00.000000",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "room",
+  "hotel_reception",
+  "item",
+  "quantity",
+  "column_break_1",
+  "unit_price",
+  "amount",
+  "consumed_at",
+  "section_break_post",
+  "guest_folio",
+  "folio_transaction_idx",
+  "is_voided",
+  "void_reason",
+  "section_break_notes",
+  "notes",
+  "staff_user"
+ ],
+ "fields": [
+  {
+   "fieldname": "room",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Room",
+   "options": "Hotel Room",
+   "reqd": 1,
+   "search_index": 1
+  },
+  {
+   "fetch_from": "room.hotel_reception",
+   "fieldname": "hotel_reception",
+   "fieldtype": "Link",
+   "in_standard_filter": 1,
+   "label": "Hotel Reception",
+   "options": "Hotel Reception",
+   "read_only": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "item",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Item",
+   "options": "Minibar Item",
+   "reqd": 1
+  },
+  {
+   "default": "1",
+   "fieldname": "quantity",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "label": "Quantity",
+   "non_negative": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fetch_from": "item.price",
+   "fieldname": "unit_price",
+   "fieldtype": "Currency",
+   "in_list_view": 1,
+   "label": "Unit Price",
+   "read_only": 1
+  },
+  {
+   "fieldname": "amount",
+   "fieldtype": "Currency",
+   "in_list_view": 1,
+   "label": "Amount",
+   "read_only": 1
+  },
+  {
+   "default": "Now",
+   "fieldname": "consumed_at",
+   "fieldtype": "Datetime",
+   "label": "Consumed At",
+   "reqd": 1
+  },
+  {
+   "fieldname": "section_break_post",
+   "fieldtype": "Section Break",
+   "label": "Folio Posting"
+  },
+  {
+   "fieldname": "guest_folio",
+   "fieldtype": "Link",
+   "in_standard_filter": 1,
+   "label": "Guest Folio",
+   "options": "Guest Folio",
+   "read_only": 1
+  },
+  {
+   "fieldname": "folio_transaction_idx",
+   "fieldtype": "Int",
+   "label": "Folio Transaction Index",
+   "read_only": 1,
+   "description": "idx of the row inside Guest Folio.transactions"
+  },
+  {
+   "default": "0",
+   "fieldname": "is_voided",
+   "fieldtype": "Check",
+   "in_standard_filter": 1,
+   "label": "Voided",
+   "read_only": 1
+  },
+  {
+   "fieldname": "void_reason",
+   "fieldtype": "Data",
+   "label": "Void Reason",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_break_notes",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "notes",
+   "fieldtype": "Small Text",
+   "label": "Notes"
+  },
+  {
+   "fieldname": "staff_user",
+   "fieldtype": "Link",
+   "label": "Recorded By",
+   "options": "User",
+   "read_only": 1
+  }
+ ],
+ "in_create": 0,
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-05-07 13:30:00.000000",
+ "modified_by": "Administrator",
+ "module": "Hospitality Core",
+ "name": "Minibar Consumption",
+ "naming_rule": "Expression",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 0,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 0,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Hospitality Manager",
+   "share": 0,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 0,
+   "email": 0,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Hospitality User",
+   "share": 0,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 0,
+   "email": 0,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Housekeeping Staff",
+   "share": 0,
+   "write": 0
+  }
+ ],
+ "quick_entry": 1,
+ "search_fields": "room,item,guest_folio",
+ "show_name_in_global_search": 0,
+ "sort_field": "consumed_at",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}

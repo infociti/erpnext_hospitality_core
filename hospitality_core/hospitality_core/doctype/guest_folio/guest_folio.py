@@ -63,34 +63,18 @@ class GuestFolio(Document):
             frappe.throw(_("Cannot delete a Folio that has transactions. Cancel it instead."))
     
     def has_permission(self, ptype="read", user=None):
-        """
-        Custom permission check for Guest Folio.
-        
-        This method overrides Frappe's default permission logic to ensure that
-        all Hospitality Users can access all guest folios, regardless of the
-        'reserved_by' field which links to the User doctype.
-        
-        Without this override, Frappe's User Permission system would restrict
-        access based on which User records a user can access, causing receptionists
-        to only see folios they created themselves.
-        
-        Args:
-            ptype: Permission type ('read', 'write', 'delete', etc.)
-            user: The user requesting access (defaults to current user)
-            
-        Returns:
-            True if access should be granted, False otherwise
-        """
+        """Bypass User Permission filtering on `reserved_by` (which links to User), but
+        still enforce Hotel Reception scoping via the centralized permissions module."""
         if not user:
             user = frappe.session.user
-        
-        # System Managers and Administrators always have full access
-        if "System Manager" in frappe.get_roles(user) or "Administrator" in frappe.get_roles(user):
+
+        roles = frappe.get_roles(user)
+        if "System Manager" in roles or "Administrator" in roles:
             return True
-        
-        # Hospitality Users should have access to all folios regardless of reserved_by
-        if "Hospitality User" in frappe.get_roles(user):
-            return True
-        
-        # For other roles, use default permission logic
-        return False
+
+        if "Hospitality User" not in roles and "Hospitality Manager" not in roles:
+            return False
+
+        # Layer reception scoping on top of role-based access
+        from hospitality_core.hospitality_core.permissions import user_can_access_reception
+        return user_can_access_reception(self.hotel_reception, user)

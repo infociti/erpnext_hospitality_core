@@ -1,6 +1,6 @@
 import frappe
 from frappe import _
-from frappe.utils import getdate, date_diff, nowdate
+from frappe.utils import add_days, date_diff, getdate, nowdate
 
 def check_availability(room, arrival_date, departure_date, ignore_reservation=None):
     """
@@ -148,6 +148,138 @@ def get_available_rooms_for_picker(doctype, txt, searchfield, start, page_len, f
         ORDER BY name ASC
         LIMIT %s, %s
     """, (room_type, room_type, f"%{txt}%", ignore or "", departure, arrival, start, page_len))
+
+@frappe.whitelist()
+def walk_in_check_in(
+    full_name: str,
+    room: str,
+    hotel_reception: str | None = None,
+    mobile_no: str | None = None,
+    email_id: str | None = None,
+    identification_type: str | None = None,
+    identification_no: str | None = None,
+    departure_date: str | None = None,
+    rate_plan: str | None = None,
+    is_day_use: int = 0,
+) -> dict:
+    """Create + immediately check-in a walk-in guest.
+
+    Finds or creates the Guest by identification_no -> mobile_no -> email,
+    validates room availability, opens the Hotel Reservation in Checked In
+    status, and triggers folio creation via the standard after_insert hook.
+    """
+    if not frappe.has_permission("Hotel Reservation", "create"):
+        frappe.throw(_("Not authorised to create reservations."))
+
+    if not full_name or not room:
+        frappe.throw(_("full_name and room are mandatory."))
+
+    arrival_date = nowdate()
+    if is_day_use and not departure_date:
+        departure_date = add_days(arrival_date, 1)
+    elif not departure_date:
+        departure_date = add_days(arrival_date, 1)
+
+    guest = _find_or_create_guest(
+        full_name=full_name,
+        mobile_no=mobile_no,
+        email_id=email_id,
+        identification_type=identification_type,
+        identification_no=identification_no,
+    )
+
+    check_availability(
+        room=room,
+        arrival_date=arrival_date,
+        departure_date=departure_date,
+    )
+
+    if not hotel_reception:
+        hotel_reception = frappe.db.get_value("Hotel Room", room, "hotel_reception")
+
+    res = frappe.new_doc("Hotel Reservation")
+    res.guest = guest
+    res.room = room
+    res.room_type = frappe.db.get_value("Hotel Room", room, "room_type")
+    res.hotel_reception = hotel_reception
+    res.arrival_date = arrival_date
+    res.departure_date = departure_date
+    res.rate_plan = rate_plan
+    res.status = "Checked In"
+    res.flags.is_walk_in = 1
+    res.insert()
+
+    return {
+        "reservation": res.name,
+        "guest": guest,
+        "room": room,
+        "arrival_date": arrival_date,
+        "departure_date": departure_date,
+        "is_day_use": bool(is_day_use),
+    }
+
+
+def _find_or_create_guest(
+    full_name: str,
+    mobile_no: str | None = None,
+    email_id: str | None = None,
+    identification_type: str | None = None,
+    identification_no: str | None = None,
+) -> str:
+    """Resolve an existing Guest by identification > mobile > email,
+    otherwise create a new one. Returns Guest.name."""
+    if identification_no:
+        existing = frappe.db.get_value("Guest", {"identification_no": identification_no}, "name")
+        if existing:
+            return existing
+    if mobile_no:
+        existing = frappe.db.get_value("Guest", {"mobile_no": mobile_no}, "name")
+        if existing:
+            return existing
+    if email_id:
+        existing = frappe.db.get_value("Guest", {"email_id": email_id}, "name")
+        if existing:
+            return existing
+
+    guest = frappe.new_doc("Guest")
+    guest.full_name = full_name
+    guest.mobile_no = mobile_no
+    guest.email_id = email_id
+    guest.identification_type = identification_type
+    guest.identification_no = identification_no
+    guest.guest_type = "Regular"
+    guest.insert(ignore_permissions=True)
+    return guest.name
+
+
+@frappe.whitelist()
+def list_arrivals_today(hotel_reception: str | None = None) -> list[dict]:
+    filters = {
+        "arrival_date": nowdate(),
+        "status": ["in", ["Reserved", "Checked In"]],
+    }
+    if hotel_reception:
+        filters["hotel_reception"] = hotel_reception
+    return frappe.get_all(
+        "Hotel Reservation",
+        fields=["name", "guest", "room", "room_type", "arrival_date", "departure_date", "status"],
+        filters=filters,
+        order_by="creation asc",
+    )
+
+
+@frappe.whitelist()
+def list_departures_today(hotel_reception: str | None = None) -> list[dict]:
+    filters = {"departure_date": nowdate(), "status": "Checked In"}
+    if hotel_reception:
+        filters["hotel_reception"] = hotel_reception
+    return frappe.get_all(
+        "Hotel Reservation",
+        fields=["name", "guest", "room", "room_type", "arrival_date", "departure_date"],
+        filters=filters,
+        order_by="creation asc",
+    )
+
 
 def create_folio(reservation_doc):
     """

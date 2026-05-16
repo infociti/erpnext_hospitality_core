@@ -1,7 +1,13 @@
 import frappe
 from frappe import _
-from frappe.utils import add_days, nowdate, getdate, flt
-from hospitality_core.hospitality_core.api.folio import sync_folio_balance, mirror_to_company_folio, mirror_to_group_folio
+from frappe.utils import add_days, flt, getdate, nowdate
+
+from hospitality_core.hospitality_core.api.folio import (
+    mirror_to_company_folio,
+    mirror_to_group_folio,
+    sync_folio_balance,
+)
+
 
 def run_daily_audit():
     """
@@ -11,12 +17,12 @@ def run_daily_audit():
     3. SKIPS posting if a Room Rent charge already exists for the current date.
     """
     posting_date = nowdate()
-    
+
     # 1. Fetch active reservations with Discount settings
-    active_reservations = frappe.get_all("Hotel Reservation", 
+    active_reservations = frappe.get_all("Hotel Reservation",
         filters={"status": "Checked In"},
         fields=[
-            "name", "guest", "room", "room_type", "rate_plan", 
+            "name", "guest", "room", "room_type", "rate_plan",
             "departure_date", "company", "folio",
             "is_complimentary", "discount_type", "discount_value",
             "is_company_guest", "is_group_guest", "group_booking"
@@ -31,7 +37,7 @@ def run_daily_audit():
         except Exception as e:
             # Truncate title to 140 characters to prevent CharacterLengthExceededError
             error_title = f"Night Audit Error: {res.name}"
-            error_message = f"Night Audit Failure for Reservation {res.name}: {str(e)}"
+            error_message = f"Night Audit Failure for Reservation {res.name}: {e!s}"
             frappe.log_error(error_message, error_title)
 
     if count > 0:
@@ -41,7 +47,7 @@ def process_single_reservation(res, posting_date):
     # First, check if already charged to avoid duplicates
     if already_charged_today(res.folio, posting_date, room=res.room):
         return False
-    
+
     # Handle true overstays (departure was BEFORE today, not today)
     # Guests departing today should still be charged for their final night
     if getdate(res.departure_date) < getdate(posting_date):
@@ -49,11 +55,11 @@ def process_single_reservation(res, posting_date):
 
     # Get Base Rate
     daily_rate = get_rate(res.rate_plan, res.room_type, posting_date)
-    
+
     if daily_rate > 0:
         post_room_charge(res, daily_rate, posting_date)
         return True
-        
+
     return False
 
 def already_charged_today(folio_name, date, room=None):
@@ -61,23 +67,27 @@ def already_charged_today(folio_name, date, room=None):
         "parent": folio_name,
         "posting_date": date,
         "is_void": 0,
-        "item": ["in", get_room_rent_item_codes()] 
+        "item": ["in", get_room_rent_item_codes()]
     }
     if room:
         # Crucial for Group Payer Folio which contains mirrored charges for many rooms
         filters["description"] = ["like", f"%{room}%"]
-        
+
     return frappe.db.exists("Folio Transaction", filters)
 
 def get_room_rent_item_codes():
     return frappe.db.sql_list("SELECT name FROM `tabItem` WHERE item_code='ROOM-RENT' OR item_group='Accommodation'")
 
 def handle_overstay(res):
+    from frappe.desk.doctype.tag.tag import add_tag
+
     new_departure = add_days(nowdate(), 1)
     # Use db.set_value to skip validation when auto-extending overstays
     # This prevents conflicts with other reservations in the same room
     frappe.db.set_value("Hotel Reservation", res.name, "departure_date", new_departure)
-    frappe.db.set_value("Hotel Reservation", res.name, "_user_tags", "Overstay")
+    # add_tag updates _user_tags AND creates the Tag master so the tag
+    # appears in the standard list-view filter UI.
+    add_tag("Overstay", "Hotel Reservation", res.name)
     # Add system comment to track the extension
     doc = frappe.get_doc("Hotel Reservation", res.name)
     doc.add_comment("Info", _("Auto-Extended: Guest still in-house at 2 PM."))
@@ -85,7 +95,7 @@ def handle_overstay(res):
 def get_rate(rate_plan, room_type, date):
     if not rate_plan:
         return frappe.db.get_value("Hotel Room Type", room_type, "default_rate")
-    
+
     plan = frappe.get_doc("Room Rate Plan", rate_plan)
     if getdate(date) >= getdate(plan.valid_from) and getdate(date) <= getdate(plan.valid_to):
         return plan.rate
@@ -101,12 +111,12 @@ def post_room_charge(res, base_amount, date):
     folio_name = res.folio
     if not folio_name:
         return
-        
+
     ensure_item_exists("ROOM-RENT", "Room Rent")
 
     # Determine Bill To
     bill_to = "Guest"
-    
+
     # 1. PRIORITY: Check if flagged as Company Guest
     if res.is_company_guest:
         bill_to = "Company"
@@ -129,7 +139,7 @@ def post_room_charge(res, base_amount, date):
         "parenttype": "Guest Folio",
         "parentfield": "transactions",
         "posting_date": date,
-        "item": "ROOM-RENT", 
+        "item": "ROOM-RENT",
         "description": f"Room Charge - {res.room}",
         "qty": 1,
         "amount": base_amount,
@@ -147,9 +157,6 @@ def post_room_charge(res, base_amount, date):
     discount_desc = ""
     discount_item = "DISCOUNT"
 
-    # DEBUG: Log discount info
-    frappe.log_error(f"Posting Charge for {res.name}: type={res.get('discount_type')}, value={res.get('discount_value')}, comp={res.get('is_complimentary')}", "Post Charge Discount Debug")
-
     if res.get("is_complimentary"):
         discount_amount = base_amount
         discount_desc = "Complimentary Adjustment"
@@ -164,14 +171,14 @@ def post_room_charge(res, base_amount, date):
 
     if discount_amount > 0:
         ensure_item_exists(discount_item, discount_desc)
-        
+
         disc_txn = frappe.get_doc({
             "doctype": "Folio Transaction",
             "parent": folio_name,
             "parenttype": "Guest Folio",
             "parentfield": "transactions",
             "posting_date": date,
-            "item": discount_item, 
+            "item": discount_item,
             "description": discount_desc,
             "qty": 1,
             "amount": -1 * discount_amount, # Negative for credit/reduction
